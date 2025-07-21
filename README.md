@@ -7,7 +7,7 @@ Designed for focused work with zero distractions, native macOS notifications, an
 
 ## ✅ Features
 
-* ⏱️ 20-minute default work sessions (configurable)
+* ⏱️ 25-minute default work sessions (configurable)
 * 📝 Session title prompt (auto-uses previous unless changed)
 * ⏳ Smart title input timeout (auto-starts unless Enter is pressed)
 * ⌨️ Keyboard controls: `p` to pause/resume, `Ctrl+C` to quit
