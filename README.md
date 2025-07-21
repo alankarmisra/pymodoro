@@ -19,7 +19,7 @@ Designed for focused work with zero distractions, native macOS notifications, an
 
 ## 📸 Screenshot
 
-<img width="761" height="291" alt="Screenshot 2025-07-21 at 7 06 18 PM" src="https://github.com/user-attachments/assets/c32ae39c-22d2-4470-a30b-a0195f031fdb" />
+<img width="794" height="422" alt="Screenshot 2025-07-21 at 7 17 33 PM" src="https://github.com/user-attachments/assets/739124ae-1624-4c3f-93ae-7ee31fcd52a9" />
 
 ---
 
