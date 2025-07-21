@@ -19,10 +19,7 @@ Designed for focused work with zero distractions, native macOS notifications, an
 
 ## 📸 Screenshot
 
-```text
-⏳ 19:58 - Writing project notes
-Press 'p' to pause/resume. Ctrl+C to quit.
-```
+<img width="761" height="291" alt="Screenshot 2025-07-21 at 7 06 18 PM" src="https://github.com/user-attachments/assets/c32ae39c-22d2-4470-a30b-a0195f031fdb" />
 
 ---
 
@@ -40,7 +37,7 @@ Press 'p' to pause/resume. Ctrl+C to quit.
 Modify these variables at the top of the script to change default durations:
 
 ```python
-WORK_MINUTES = 20
+WORK_MINUTES = 25
 BREAK_MINUTES = 5
 ```
 
