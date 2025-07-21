@@ -21,9 +21,11 @@ Designed for focused work with zero distractions, native macOS notifications, an
 
 (Note: Work session time reduced for screenshots)
 
+### Terminal
 <img width="794" height="422" alt="Screenshot 2025-07-21 at 7 17 33 PM" src="https://github.com/user-attachments/assets/739124ae-1624-4c3f-93ae-7ee31fcd52a9" />
 
 
+### Generated CSV
 <img width="838" height="257" alt="Screenshot 2025-07-21 at 8 10 36 PM" src="https://github.com/user-attachments/assets/a9cbf2c2-aef6-416b-a3e7-3a817f2921f3" />
 
 
