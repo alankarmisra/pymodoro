@@ -1,2 +1,5 @@
 .last_pymodoro_title.txt
+.ipynb_checkpoints
+.last_pymodoro_title.txt
 pymodoro_log.csv
+*.ipynb
