@@ -3,3 +3,4 @@
 .last_pymodoro_title.txt
 pymodoro_log.csv
 *.ipynb
+pymodoro_config.json

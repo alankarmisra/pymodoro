@@ -13,10 +13,13 @@ import subprocess
 import platform
 import shutil
 import threading
+import json
 from datetime import datetime
 
-# === Config ===
-CONFIG = {
+# === Config Management ===
+CONFIG_FILE = 'pymodoro_config.json'
+
+DEFAULT_CONFIG = {
     'WORK_MINUTES': 25,  # Traditional Pomodoro is 25 minutes
     'SHORT_BREAK_MINUTES': 5,
     'LONG_BREAK_MINUTES': 15,
@@ -25,6 +28,32 @@ CONFIG = {
     'LOG_FILE': 'pymodoro_log.csv',
     'MIN_SECONDS_TO_LOG': 60  # Minimum seconds for a session to be logged on exit
 }
+
+def load_config():
+    """Load configuration from file, create with defaults if it doesn't exist."""
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r') as f:
+                config = json.load(f)
+                # Ensure all required keys exist, add defaults for missing ones
+                for key, default_value in DEFAULT_CONFIG.items():
+                    if key not in config:
+                        config[key] = default_value
+                return config
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Warning: Could not read config file ({e}). Using defaults.")
+    
+    # Create config file with defaults
+    try:
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(DEFAULT_CONFIG, f, indent=4)
+        print(f"Created config file: {CONFIG_FILE}")
+    except IOError as e:
+        print(f"Warning: Could not create config file ({e}). Using defaults.")
+    
+    return DEFAULT_CONFIG.copy()
+
+CONFIG = load_config()
 
 class PomodoroTimer:
     def __init__(self):
