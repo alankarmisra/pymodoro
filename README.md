@@ -42,11 +42,13 @@ Designed for focused work with zero distractions, native macOS notifications, an
 
 ## ⚙️ Configuration
 
-Modify these variables at the top of the script to change default durations:
+Modify these variables in the pymodoro_config.json to change default durations:
 
 ```python
 WORK_MINUTES = 25
-BREAK_MINUTES = 5
+BREAK_MINUTES = 5 # If this is 0, the breaks will be skipped. Great for flow states.
+...
+MIN_SECONDS_TO_LOG = 60 # If your session is less than 60 seconds, it won't be logged. You can change this to 0 if you want.
 ```
 
 ---
@@ -88,6 +90,11 @@ Then run:
 
 ```bash
 ./pymodoro.py
+```
+
+Alternatively you can run
+```bash
+python3 pymodoro.py
 ```
 
 ---

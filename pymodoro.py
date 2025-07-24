@@ -24,9 +24,9 @@ DEFAULT_CONFIG = {
     'SHORT_BREAK_MINUTES': 5,
     'LONG_BREAK_MINUTES': 15,
     'SESSIONS_BEFORE_LONG_BREAK': 4,
+    'MIN_SECONDS_TO_LOG': 60,  # Minimum seconds for a session to be logged on exit
     'STATE_FILE': '.last_pymodoro_title.txt',
-    'LOG_FILE': 'pymodoro_log.csv',
-    'MIN_SECONDS_TO_LOG': 60  # Minimum seconds for a session to be logged on exit
+    'LOG_FILE': 'pymodoro_log.csv'
 }
 
 def load_config():
