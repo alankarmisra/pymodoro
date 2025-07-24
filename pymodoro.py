@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Author: Enhanced version of ChatGPT's original
+# Authors: Alankar Misra, Claude.ai, ChatGPT
 
 import time
 import csv
@@ -17,18 +17,20 @@ from datetime import datetime
 
 # === Config ===
 CONFIG = {
-    'WORK_MINUTES': 20,  # Traditional Pomodoro is 25 minutes
+    'WORK_MINUTES': 25,  # Traditional Pomodoro is 25 minutes
     'SHORT_BREAK_MINUTES': 5,
     'LONG_BREAK_MINUTES': 15,
     'SESSIONS_BEFORE_LONG_BREAK': 4,
     'STATE_FILE': '.last_pymodoro_title.txt',
-    'LOG_FILE': 'pymodoro_log.csv'
+    'LOG_FILE': 'pymodoro_log.csv',
+    'MIN_SECONDS_TO_LOG': 60  # Minimum seconds for a session to be logged on exit
 }
 
 class PomodoroTimer:
     def __init__(self):
         self.paused = False
         self.pause_lock = threading.Lock()
+        self.current_session = None  # Track current session for partial logging
         
     def get_last_title(self):
         """Get the last used session title."""
@@ -59,6 +61,13 @@ class PomodoroTimer:
                 writer.writerow([title, minutes, datetime.now().isoformat(), session_type])
         except IOError:
             print("Warning: Could not write to log file.")
+
+    def log_partial_session(self, title, elapsed_seconds, session_type="work"):
+        """Log a partial session if it meets minimum duration requirements."""
+        if elapsed_seconds >= CONFIG['MIN_SECONDS_TO_LOG']:
+            minutes = elapsed_seconds / 60
+            self.log_session(title, round(minutes, 2), f"partial_{session_type}")
+            print(f"\n📝 Logged partial session: {round(minutes, 1)} minutes")
 
     def notify(self, title, message):
         """Send system notification with sound."""
@@ -138,10 +147,18 @@ class PomodoroTimer:
         percentage = int(100 * progress)
         return f'[{bar}] {percentage}%'
 
-    def run_timer(self, minutes, label):
+    def run_timer(self, minutes, label, session_type="work"):
         """Run a timer with pause/resume functionality."""
         total_seconds = int(minutes * 60)
         start_time = time.time()
+        
+        # Track current session for partial logging
+        self.current_session = {
+            'title': getattr(self, 'current_title', 'Pymodoro'),
+            'start_time': start_time,
+            'session_type': session_type,
+            'total_seconds': total_seconds
+        }
         
         # Start input handler thread
         input_thread = threading.Thread(target=self.handle_input, daemon=True)
@@ -149,38 +166,56 @@ class PomodoroTimer:
         
         print(f"⏱️  {label} — Press 'p' to pause/resume. Ctrl+C to quit.")
         
-        while True:
-            with self.pause_lock:
-                if not self.paused:
-                    elapsed = time.time() - start_time
-                    remaining = total_seconds - elapsed
-                    
-                    if remaining <= 0:
-                        # Show 100% completion before breaking
-                        print(f"\r⏳ 00:00 [{'█' * 30}] 100% {label}", 
+        try:
+            while True:
+                with self.pause_lock:
+                    if not self.paused:
+                        elapsed = time.time() - start_time
+                        remaining = total_seconds - elapsed
+                        
+                        if remaining <= 0:
+                            # Show 100% completion before breaking
+                            print(f"\r⏳ 00:00 [{'█' * 30}] 100% {label}", 
+                                  end='', flush=True)
+                            break
+                        
+                        # Ensure we don't show negative time
+                        remaining = max(0, remaining)
+                        mins, secs = divmod(int(remaining), 60)
+                        progress_bar = self.create_progress_bar(remaining, total_seconds)
+                        print(f"\r⏳ {mins:02d}:{secs:02d} {progress_bar} {label}", 
                               end='', flush=True)
-                        break
-                    
-                    # Ensure we don't show negative time
-                    remaining = max(0, remaining)
-                    mins, secs = divmod(int(remaining), 60)
-                    progress_bar = self.create_progress_bar(remaining, total_seconds)
-                    print(f"\r⏳ {mins:02d}:{secs:02d} {progress_bar} {label}", 
-                          end='', flush=True)
-                else:
-                    print(f"\r⏸️  Paused - {label} (Press 'p' to resume)     ", 
-                          end='', flush=True)
-                    # Adjust start time to account for pause
-                    pause_start = time.time()
-            
-            time.sleep(0.1)  # More responsive updates
-            
-            # If we were paused, adjust the start time
-            if self.paused:
-                start_time += time.time() - pause_start
+                    else:
+                        print(f"\r⏸️  Paused - {label} (Press 'p' to resume)     ", 
+                              end='', flush=True)
+                        # Adjust start time to account for pause
+                        pause_start = time.time()
+                
+                time.sleep(0.1)  # More responsive updates
+                
+                # If we were paused, adjust the start time
+                if self.paused:
+                    start_time += time.time() - pause_start
 
-        print(f"\n✅ Finished: {label}")
-        self.notify("Pymodoro", f"{label} complete!")
+            print(f"\n✅ Finished: {label}")
+            
+            # Only send notification if it's not a 0-minute break session
+            if minutes > 0 or session_type == "work":
+                self.notify("Pymodoro", f"{label} complete!")
+            
+            # Clear current session since it completed normally
+            self.current_session = None
+            
+        except KeyboardInterrupt:
+            # Handle partial session logging on interrupt
+            if self.current_session:
+                elapsed_seconds = time.time() - self.current_session['start_time']
+                self.log_partial_session(
+                    self.current_session['title'], 
+                    elapsed_seconds, 
+                    self.current_session['session_type']
+                )
+            raise  # Re-raise to be handled by the main loop
 
     def run(self):
         """Main application loop."""
@@ -194,25 +229,30 @@ class PomodoroTimer:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.old_settings)
             title = self.prompt_for_title()
             self.save_last_title(title)
+            self.current_title = title  # Store for partial logging
             tty.setcbreak(sys.stdin.fileno())
 
             print(f"\n🍅 Starting Pomodoro sessions for: {title}")
-            print(f"Work: {CONFIG['WORK_MINUTES']}min, Short break: {CONFIG['SHORT_BREAK_MINUTES']}min, Long break: {CONFIG['LONG_BREAK_MINUTES']}min\n")
+            print(f"Work: {CONFIG['WORK_MINUTES']}min, Short break: {CONFIG['SHORT_BREAK_MINUTES']}min, Long break: {CONFIG['LONG_BREAK_MINUTES']}min")
+            print(f"Minimum session duration to log on exit: {CONFIG['MIN_SECONDS_TO_LOG']} seconds\n")
 
             while True:
                 # Work session
-                self.run_timer(CONFIG['WORK_MINUTES'], f"Work — {title}")
+                self.run_timer(CONFIG['WORK_MINUTES'], f"Work — {title}", "work")
                 self.log_session(title, CONFIG['WORK_MINUTES'], "work")
                 session_count += 1
 
                 # Break session
                 if session_count % CONFIG['SESSIONS_BEFORE_LONG_BREAK'] == 0:
-                    self.run_timer(CONFIG['LONG_BREAK_MINUTES'], "Long Break")
+                    self.run_timer(CONFIG['LONG_BREAK_MINUTES'], "Long Break", "long_break")
                     self.log_session(title, CONFIG['LONG_BREAK_MINUTES'], "long_break")
                     print(f"\n🎉 Completed {session_count} work sessions! Great job!\n")
                 else:
-                    self.run_timer(CONFIG['SHORT_BREAK_MINUTES'], "Short Break")
-                    self.log_session(title, CONFIG['SHORT_BREAK_MINUTES'], "short_break")
+                    if CONFIG['SHORT_BREAK_MINUTES'] > 0:
+                        self.run_timer(CONFIG['SHORT_BREAK_MINUTES'], "Short Break", "short_break")
+                        self.log_session(title, CONFIG['SHORT_BREAK_MINUTES'], "short_break")
+                    else:
+                        print("⏭️  Skipping short break (0 minutes configured)")
 
         except KeyboardInterrupt:
             print("\n👋 Exiting Pymodoro timer. Great work!")
@@ -225,11 +265,15 @@ def main():
     """Entry point."""
     if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help']:
         print("Pymodoro Timer")
-        print("Usage: python pymodoro.py")
+        script_name = os.path.basename(sys.argv[0])
+        print(f"Usage: {script_name}")
+        print("   or: python pymodoro.py")
+        print("   or: python3 pymodoro.py")
         print("\nDuring timer:")
         print("  p - pause/resume")
         print("  Ctrl+C - quit")
         print(f"\nConfig: {CONFIG['WORK_MINUTES']}min work, {CONFIG['SHORT_BREAK_MINUTES']}min short break, {CONFIG['LONG_BREAK_MINUTES']}min long break")
+        print(f"Minimum duration to log partial sessions: {CONFIG['MIN_SECONDS_TO_LOG']} seconds")
         return
     
     timer = PomodoroTimer()
